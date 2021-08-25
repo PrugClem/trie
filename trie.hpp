@@ -61,7 +61,7 @@ namespace trie {
     protected:
         struct node {
             std::array<std::shared_ptr<node>, children_count> children;
-            std::weak_ptr<node> parent;
+            //std::weak_ptr<node> parent;
             std::shared_ptr<T> data;
 
             /**
@@ -69,20 +69,6 @@ namespace trie {
              *          Note that the returned shared_ptr might cause a memory leak if it is not cleaned up.
              *          Note that the return might be a nullptr.
              */
-            std::shared_ptr<node> get_parent()
-            {
-                // lock the weak pointer and get a shred pointer
-                // note that the returned shared pointer might point to nullptr if the parent is not set or was deleted
-                return this->parent.lock(); 
-            }
-            /**
-             *  \brief check if this node is a root node (has no parents)
-             */
-            bool is_root()
-            {
-                // if the parent shared pointer was deleted or does not point to a parent node, a nullptr will result from getting the parent node
-                return this->get_parent() != nullptr;
-            }
             bool has_children()
             {
                 return this->first_child() != nullptr;
@@ -145,7 +131,6 @@ namespace trie {
                 if (child == nullptr)
                 {
                     child = helper->get_child(_key.get_element(i)) = std::make_shared<node>(); // if the child item is empty, allocate a new one and set the helper pointer to it
-                    child->parent = helper; // set the parent of the child item
                 }
                 helper = child;
             }
@@ -188,13 +173,14 @@ namespace trie {
                     {
                         if (cur_node->get_child(uint8_t(i)) != nullptr)
                         {
+                            // if a child was found, go to child node and stop iterating
                             cur_node = cur_node->get_child(uint8_t(i));
                             cur_key.push_back(uint8_t(i));
                             child_key = 0;
                             return;
                         }
                     }
-                    // no child found, go to parent / null
+                    // no child found, go to parent ( which is the null ode for the root node )
                     if (cur_node == root_node)
                     {
                         cur_node = nullptr;
@@ -205,6 +191,43 @@ namespace trie {
                     child_key = (std::size_t)cur_key.get_element(cur_key.size() - 1) + 1;
                     cur_key.pop_back();
                     cur_node = ::trie::trie<T>(root_node).get_node(cur_key);
+                }
+            }
+            void step_backwards()
+            {
+                if(cur_node == nullptr)
+                {
+                    cur_node = root_node;
+                    cur_key.clear();
+                    child_key = children_count-1;
+                }
+                else if (cur_node == root_node)
+                {
+                    cur_node = nullptr;
+                    cur_key.clear();
+                    child_key = 0;
+                    return;
+                } 
+                else 
+                {
+                    child_key = (std::size_t)cur_key.get_element(cur_key.size() - 1) - 1;
+                    cur_key.pop_back();
+                    cur_node = ::trie::trie<T>(root_node).get_node(cur_key);
+                }
+
+                while (true)
+                {
+                    for (std::ptrdiff_t i = child_key; i >= 0; i--)
+                    {
+                        if (cur_node->get_child((uint8_t)i) != nullptr)
+                        {
+                            cur_node = cur_node->get_child((uint8_t)i);
+                            cur_key.push_back((uint8_t)i);
+                            child_key = children_count-1;
+                            i = child_key;
+                        }
+                    }
+                    return;
                 }
             }
         }; // class basic_node_iterator
@@ -228,6 +251,17 @@ namespace trie {
                 this->step_forward();
                 return copy;
             }
+            node_iterator& operator--()
+            {
+                this->step_backwards();
+                return *this;
+            }
+            node_iterator operator--(int)
+            {
+                node_iterator copy = *this;
+                this->step_backwards();
+                return copy;
+            }
             bool operator==(const node_iterator& other)
             {
                 if (this->root_node != other.root_node) throw std::out_of_range("Iterators are not obtained from the same trie!");
@@ -237,6 +271,15 @@ namespace trie {
             {
                 return !(*this == other);
             }
+
+            operator bool()
+            {
+                return this->cur_node != nullptr;
+            }
+            bool operator!()
+            {
+                return this->cur_node == nullptr;
+            }
             ::trie::key get_key() { return this->cur_key; }
             std::shared_ptr<T> get_data() { return this->cur_node->data; }
         }; // class node_iterator
@@ -244,8 +287,8 @@ namespace trie {
         trie() { this->_root = std::make_shared<node>(); }
         ~trie() {}
 
-        trie(trie&& src) { this->_root = std::move(src._root); } // move constructing
-        trie& operator=(trie&& src) { this->_root = std::move(src._root); } // move assignment
+        trie(trie&& src) noexcept { this->_root = std::move(src._root); } // move constructing
+        trie& operator=(trie&& src) noexcept { this->_root = std::move(src._root); return *this; } // move assignment
         [[deprecated("Use the clone method")]] trie(const trie& src) = delete; // copy constructing
         [[deprecated("Use the clone method")]] trie& operator=(const trie& src) = delete; // copy assignment
 
@@ -283,11 +326,11 @@ namespace trie {
             }
         }
 
-        ::trie::trie<T> subtrie(::trie::key _key)
+        ::trie::trie<T>&& subtrie(::trie::key _key)
         {
             std::shared_ptr<node> newroot = this->get_node(_key);
             if(newroot == nullptr) throw std::out_of_range("Trie does not have the requested child");
-            return ::trie::trie<T>(newroot);
+            return std::move(::trie::trie<T>(newroot) );
         }
 
         node_iterator node_begin()

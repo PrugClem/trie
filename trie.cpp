@@ -25,11 +25,38 @@ int main()
         //std::cout << "test.at(\"ABC\"): " << *test.at(trie::key("ABC")) << std::endl;
         test.print_trie(std::cout);
 
-        std::cout << "begin: [" << test.node_begin().get_key() << "] : " << test.node_begin().get_data() << std::endl;
+        std::cout << "begin: [" << test.node_begin().get_key() << "] : " << test.node_begin().get_data() << std::endl << std::endl;
         //std::cout << "end:   [" << test.node_end()  .get_key() << "] : " << test.node_end()  .get_data() << std::endl;
         for(trie::trie<std::string>::node_iterator iter = test.node_begin(); iter != test.node_end(); iter++)
         {
-            std::cout << "[" << iter.get_key() << "] : " << iter.get_data() << std::endl;
+            auto iter2 = iter;
+            --iter2;
+            if (iter)
+                std::cout << "CURRENT:  [" << iter.get_key() << "] : " << iter.get_data() << std::endl;
+            else
+                std::cout << "CURRENT:  [(null)]" << std::endl;
+            if (iter2)
+                std::cout << "PREVIOUS: [" << iter2.get_key() << "] : " << iter2.get_data() << std::endl;
+            else
+                std::cout << "PREVIOUS: [(null)]" << std::endl;
+            std::cout << std::endl;
+        }
+        auto iter = test.node_end();
+        auto iter2 = iter;
+        --iter2;
+        if (iter)
+            std::cout << "CURRENT:  [" << iter.get_key() << "] : " << iter.get_data() << std::endl;
+        else
+            std::cout << "CURRENT:  [(null)]" << std::endl;
+        if (iter2)
+            std::cout << "PREVIOUS: [" << iter2.get_key() << "] : " << iter2.get_data() << std::endl;
+        else
+            std::cout << "PREVIOUS: [(null)]" << std::endl;
+        std::cout << std::endl;
+        sub = test.subtrie(trie::key("ABC"));
+        for (auto iter = sub.node_begin(); iter != sub.node_end(); iter++)
+        {
+            std::cout << "Subtrie key " << iter.get_key() << " : " << iter.get_data() << std::endl;
         }
     }
 
