@@ -39,3 +39,6 @@ CMakeSettings.json
 # vs code directories
 .vscode
 build
+
+# test input files
+#test_data.txt

@@ -19,15 +19,20 @@
 #include <ostream>
 
 namespace trie {
-    constexpr size_t children_count = 256;
+    constexpr const std::size_t children_count = 256;
     struct key {
         std::vector<uint8_t> _key;
+        std::size_t _size = 0;
 
-        key() {}
-        key(void* data, size_t len)
+        key()
+        {
+            this->_key.clear();
+        }
+        key(void* data, std::size_t len)
         {
             _key.resize(len);
-            for (size_t i = 0; i < len; i++)
+            _size = len * 2;
+            for (std::size_t i = 0; i < len; i++)
             {
                 _key.at(i) = ((uint8_t*)data)[i]; // copy every element from the source into the key
             }
@@ -35,17 +40,72 @@ namespace trie {
         key(const std::string& string_key)
         {
             _key.resize(string_key.length());
-            for (size_t i = 0; i < string_key.size(); i++)
+            _size = string_key.length() * 2;
+            for (std::size_t i = 0; i < string_key.size(); i++)
             {
                 _key.at(i) = string_key.at(i); // copy every ASCII character into the key
             }
 
         }
-        uint8_t get_element(size_t index) const { return _key.at(index); } // get a specific byte of the key
+#if 1
+        uint8_t get_element(std::size_t index) const { return _key.at(index); } // get a specific byte of the key
         std::size_t size() const { return this->_key.size(); }
         void push_back(uint8_t data) { this->_key.push_back(data); }
         void pop_back() { this->_key.pop_back(); }
         void clear() { this->_key.clear(); }
+#else
+        uint8_t get_element(std::size_t index) const
+        {
+            // get raw binary data from key bytes
+            uint8_t data = this->_key.at(index >> 1);
+            if (index % 2 == 0)
+            {
+                // even, use lower bits
+                data = data & 0xF;
+            }
+            else
+            {
+                // odd, use higher bits
+                data = (data & 0xF0) >> 4;
+            }
+            return data;
+        }
+        std::size_t size() const { return this->_size; }
+        void push_back(uint8_t data)
+        {
+            if (this->_size % 2 == 0)
+            {
+                // even, new byte needed
+                this->_key.push_back(data & 0xF);
+                this->_size++;
+            }
+            else
+            {
+                // odd, data needs to be stffed into the last byte
+                this->_key.at(this->_key.size()-1) |= (data & 0xF << 4);
+                this->_size++;
+            }
+        }
+        void pop_back()
+        {
+            if (this->_size == 0)
+            {
+                // even, removal does not remove a byte
+                this->_size--;
+            }
+            else
+            {
+                // odd, removal wioll remove the last byte
+                this->_key.pop_back();
+                this->_size--;
+            }
+        }
+        void clear()
+        {
+            this->_key.clear();
+            this->_size = 0;
+        }
+#endif
     }; // struct key
 
     std::ostream& operator<<(std::ostream& o, const ::trie::key& _key)
@@ -65,21 +125,6 @@ namespace trie {
             std::shared_ptr<T> data;
 
             /**
-             *  \brief  returns a std::shred_ptr to the parent node.
-             *          Note that the returned shared_ptr might cause a memory leak if it is not cleaned up.
-             *          Note that the return might be a nullptr.
-             */
-            bool has_children()
-            {
-                return this->first_child() != nullptr;
-            }
-            std::shared_ptr<node> first_child()
-            {
-                for (size_t i = 0; i < children_count; i++)
-                    if (this->children.at(i) != nullptr) return this->children.at(i);
-                return nullptr;
-            }
-            /**
              *  \brief get a child shared_ptr
              */
             std::shared_ptr<node>& get_child(std::uint8_t key_element)
@@ -89,25 +134,6 @@ namespace trie {
         }; // struct node
 
         std::shared_ptr<node> _root;
-
-        void print_trienode(std::ostream& out, std::shared_ptr<::trie::trie<T>::node> node, std::size_t level)
-        {
-            for(std::size_t i=0; i<children_count; i++)
-            {
-                std::shared_ptr<::trie::trie<T>::node> child = node->get_child(i);
-                if (child != nullptr)
-                {
-                    for (size_t l = 0; l < level; l++)
-                    {
-                        out << " ";
-                    }
-                    out << (char)i;
-                    if (child->data != nullptr) out << "  : " << *(child->data);
-                    out << std::endl;
-                    print_trienode(out, child, level+1);
-                }
-            }
-        }
 
         std::shared_ptr<node> get_node(const ::trie::key& _key)
         {
@@ -140,25 +166,24 @@ namespace trie {
         trie(std::shared_ptr<node> root) { this->_root = root; }
 
     public:
+        static constexpr std::size_t node_size = sizeof(node);
         class basic_node_iterator
         {
         protected:
             // protected internal pointers to allow inherited classes to access them
             std::shared_ptr<node> root_node;
-            std::shared_ptr<node> cur_node;
-            ::trie::key cur_key;
-            std::size_t child_key = 0;
+            mutable std::shared_ptr<node> cur_node;
+            mutable ::trie::key cur_key;
+            mutable std::size_t child_key = 0;
         public: // public constructors and destructors
             basic_node_iterator(std::shared_ptr<node> root_node, std::shared_ptr<node> init_node, ::trie::key init_key) :
                 root_node(root_node), cur_node(init_node), cur_key(init_key) {}
             basic_node_iterator() {}
             virtual ~basic_node_iterator() {}
         protected:
-            void step_forward() // helper function to step the iterator one step forward
+            void step_forward() const // helper function to step the iterator one step forward
             {
-                std::shared_ptr<node> child;
                 while (true) { // the loop is neccessary for the code to function properly, it will return eventually unless the trie is malformed
-                    child = nullptr;
                     
                     // if the current node is the null node, go to the root node
                     if (cur_node == nullptr)
@@ -193,7 +218,7 @@ namespace trie {
                     cur_node = ::trie::trie<T>(root_node).get_node(cur_key);
                 }
             }
-            void step_backwards()
+            void step_backward() const
             {
                 if(cur_node == nullptr)
                 {
@@ -230,6 +255,24 @@ namespace trie {
                     return;
                 }
             }
+        public:
+            bool operator==(const basic_node_iterator& other) const
+            {
+                if (this->root_node != other.root_node) throw std::out_of_range("Iterators are not obtained from the same trie!");
+                return this->cur_node == other.cur_node;
+            }
+            bool operator!=(const basic_node_iterator& other) const
+            {
+                if (this->root_node != other.root_node) throw std::out_of_range("Iterators are not obtained from the same trie!");
+                return !(*this == other);
+            }
+
+            operator bool() const { return this->cur_node != nullptr; }
+            bool operator!() const { return this->cur_node == nullptr; }
+
+            const ::trie::key get_key() const { return this->cur_key; }
+            std::shared_ptr<T> get_data() { return this->cur_node->data; }
+            const std::shared_ptr<T> get_data() const { return this->cur_node->data; }
         }; // class basic_node_iterator
 
         class node_iterator : public basic_node_iterator
@@ -240,57 +283,38 @@ namespace trie {
             node_iterator() : basic_node_iterator() {}
             ~node_iterator() {}
 
-            node_iterator& operator++()
-            {
-                this->step_forward();
-                return *this;
-            }
-            node_iterator operator++(int)
-            {
-                node_iterator copy = *this;
-                this->step_forward();
-                return copy;
-            }
-            node_iterator& operator--()
-            {
-                this->step_backwards();
-                return *this;
-            }
-            node_iterator operator--(int)
-            {
-                node_iterator copy = *this;
-                this->step_backwards();
-                return copy;
-            }
-            bool operator==(const node_iterator& other)
-            {
-                if (this->root_node != other.root_node) throw std::out_of_range("Iterators are not obtained from the same trie!");
-                return this->cur_node == other.cur_node;
-            }
-            bool operator!=(const node_iterator& other)
-            {
-                return !(*this == other);
-            }
-
-            operator bool()
-            {
-                return this->cur_node != nullptr;
-            }
-            bool operator!()
-            {
-                return this->cur_node == nullptr;
-            }
-            ::trie::key get_key() { return this->cur_key; }
-            std::shared_ptr<T> get_data() { return this->cur_node->data; }
+            const node_iterator& operator++() const { this->step_forward(); return *this; }
+            const node_iterator operator++(int) const { node_iterator copy = *this; this->step_forward(); return copy; }
+            const node_iterator& operator--() const { this->step_backward(); return *this; }
+            const node_iterator operator--(int) const { node_iterator copy = *this; this->step_backward(); return copy; }
         }; // class node_iterator
+
+        class reverse_node_iterator : public basic_node_iterator
+        {
+        public:
+            reverse_node_iterator(std::shared_ptr<node> root_node, std::shared_ptr<node> init_node, ::trie::key init_key) :
+                basic_node_iterator(root_node, init_node, init_key) {}
+            reverse_node_iterator() : basic_node_iterator() {}
+            ~reverse_node_iterator() {}
+
+            const reverse_node_iterator& operator++() const { this->step_backward(); return *this; }
+            const reverse_node_iterator operator++(int) const { reverse_node_iterator copy = *this; this->step_backward(); return copy; }
+            const reverse_node_iterator& operator--() const { this->step_forward(); return *this; }
+            const reverse_node_iterator operator--(int) const { reverse_node_iterator copy = *this; this->step_forward(); return copy; }
+        }; // class reverse_node_iterator
 
         trie() { this->_root = std::make_shared<node>(); }
         ~trie() {}
 
         trie(trie&& src) noexcept { this->_root = std::move(src._root); } // move constructing
         trie& operator=(trie&& src) noexcept { this->_root = std::move(src._root); return *this; } // move assignment
-        [[deprecated("Use the clone method")]] trie(const trie& src) = delete; // copy constructing
-        [[deprecated("Use the clone method")]] trie& operator=(const trie& src) = delete; // copy assignment
+#if defined TRIE_ALLOW_DEPRECATED_COPY_CLONING
+        [[deprecated("Use the clone method")]] trie(const trie& src) { *this = src.clone(); } // copy constructing
+        [[deprecated("Use the clone method")]] trie& operator=(const trie& src) { *this = src.clone(); return *this; } // copy assignment
+#else
+        trie(const trie& src) = delete; // disable copy constructing
+        trie& operator=(const trie& src) = delete; // disable copy assignments
+#endif
 
         bool has_node(const ::trie::key& _key)
         {
@@ -326,27 +350,29 @@ namespace trie {
             }
         }
 
-        ::trie::trie<T>&& subtrie(::trie::key _key)
+        ::trie::trie<T> subtrie(::trie::key _key)
         {
             std::shared_ptr<node> newroot = this->get_node(_key);
             if(newroot == nullptr) throw std::out_of_range("Trie does not have the requested child");
-            return std::move(::trie::trie<T>(newroot) );
+            return ::trie::trie<T>(newroot);
+        }
+        ::trie::trie<T> clone() const
+        {
+            ::trie::trie<T> _clone;
+            for (auto iter = this->node_begin(); iter != this->node_end(); iter++)
+                _clone.insert(iter.get_key(), iter.get_data());
+            return ::trie::trie<T>(_clone._root);
         }
 
-        node_iterator node_begin()
-        {
-            return ++node_iterator(_root, nullptr, ::trie::key());
-        }
-        node_iterator node_end()
-        {
-            return node_iterator(_root, nullptr, ::trie::key());
-        }
+        node_iterator node_begin() { return ++node_iterator(_root, nullptr, ::trie::key()); }
+        const node_iterator node_begin() const { return ++node_iterator(_root, nullptr, ::trie::key()); }
+        node_iterator node_end() { return node_iterator(_root, nullptr, ::trie::key()); }
+        const node_iterator node_end() const { return node_iterator(_root, nullptr, ::trie::key()); }
 
-        void print_trie(std::ostream& out)
-        {
-            print_trienode(out, _root, 0);
-        }
+        reverse_node_iterator node_rbegin() { return ++reverse_node_iterator(_root, nullptr, ::trie::key()); }
+        const reverse_node_iterator node_rbegin() const { return ++reverse_node_iterator(_root, nullptr, ::trie::key()); }
+        reverse_node_iterator node_rend() { return reverse_node_iterator(_root, nullptr, ::trie::key()); }
+        const reverse_node_iterator node_rend() const { return reverse_node_iterator(_root, nullptr, ::trie::key()); }
     }; // class trie
 }; // namespace trie
 
-// TODO: Reference additional headers your program requires here.
