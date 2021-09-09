@@ -13,7 +13,7 @@ constexpr std::size_t iterations = 10'000;
 void read_test_file(std::istream& input, trie::trie<std::string>& output)
 {
     std::string stringbuffer, key, value;
-    std::size_t index, length;
+    std::size_t index, length, line_number = 0;
     bool valid_line;
     // read everything from the istream
     while(!input.eof())
@@ -21,6 +21,7 @@ void read_test_file(std::istream& input, trie::trie<std::string>& output)
         // get one line at the time
         // the lines can be taken from a *.json file, with the a format like `*"key"*:*"value*"*`
         std::getline(input, stringbuffer);
+        std::cout << "reading file line #" << ++line_number << "\r";
         valid_line = false;
 
         // read key string
@@ -52,11 +53,16 @@ void read_test_file(std::istream& input, trie::trie<std::string>& output)
     }
 }
 
+std::string limit_string(std::string input, std::size_t limit)
+{
+    return input.substr(0, std::min(input.length() - 1, limit));
+}
+
 int main()
 {
     std::chrono::system_clock::time_point t0, start;
 
-#if 0
+#if 1
     std::ifstream ifile("../../../test_data.txt");
     if (!ifile)
     {
@@ -67,13 +73,15 @@ int main()
     std::size_t pairs = 0, nodes = 0;
     trie::trie<std::string> file_content;
     read_test_file(ifile, file_content);
+    std::cout << std::endl;
     for (auto iter = file_content.node_begin(); iter != file_content.node_end(); iter++)
     {
         if (iter) nodes++;
         if (iter && iter.get_data()) pairs++;
+        std::cout << "counted " << nodes << " nodes containing " << pairs << " pairs at key " << limit_string(iter.get_key().to_hex_string(), 20) << "             \r";
     }
-    std::cout << pairs << " key-value pairs stored into " << nodes << " trie nodes totaling " << (nodes * ::trie::trie<std::string>::node_size ) << " bytes found in file" << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::cout << std::endl << pairs << " key-value pairs stored into " << nodes << " trie nodes totaling " << (nodes * ::trie::trie<std::string>::node_size ) << " bytes found in file" << std::endl;
+    //std::this_thread::sleep_for(std::chrono::seconds(10));
     return 0;
 #else
     {
@@ -85,10 +93,12 @@ int main()
         test.insert(trie::key("ABCEDF"), nullptr);
         test.insert(trie::key("Z"), nullptr);
 
+        std::cout << "trie.at(\"ABC\"): " << test.at(trie::key("ABC")) << std::endl;
+
         std::cout << "Printing main trie, regular order" << std::endl;
         for (auto iter = test.node_begin(); iter != test.node_end(); iter++)
         {
-            std::cout << "test.at(\"" << iter.get_key() << "\"): " << iter.get_data() << std::endl;
+            std::cout << "test.at(\"" << iter.get_key().to_string() << "\"): " << iter.get_data() << std::endl;
         }
 
         sub = test.subtrie(trie::key("ABC"));
@@ -97,12 +107,12 @@ int main()
         std::cout << "Printing subtrie, regular order" << std::endl;
         for (auto iter = sub.node_begin(); iter != sub.node_end(); iter++)
         {
-            std::cout << "sub.at(\"" << iter.get_key() << "\"): " << iter.get_data() << std::endl;
+            std::cout << "sub.at(\"" << iter.get_key().to_string() << "\"): " << iter.get_data() << std::endl;
         }
         std::cout << "Printing subtrie, reverse order" << std::endl;
         for (auto riter = sub.node_rbegin(); riter != sub.node_rend(); riter++)
         {
-            std::cout << "sub.at(\"" << riter.get_key() << "\"): " << riter.get_data() << std::endl;
+            std::cout << "sub.at(\"" << riter.get_key().to_string() << "\"): " << riter.get_data() << std::endl;
         }
 
         copy = sub.clone();
@@ -111,7 +121,7 @@ int main()
         std::cout << "Printing cloned and modified subtrie, regular order" << std::endl;
         for (auto iter = copy.node_begin(); iter != copy.node_end(); iter++)
         {
-            std::cout << "copy.at(\"" << iter.get_key() << "\"): " << iter.get_data() << std::endl;
+            std::cout << "copy.at(\"" << iter.get_key().to_string() << "\"): " << iter.get_data() << std::endl;
         }
     }
 

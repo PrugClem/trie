@@ -19,7 +19,10 @@
 #include <ostream>
 
 namespace trie {
-    constexpr const std::size_t children_count = 256;
+// allowed values are: 16, 256; 16 is the mainly tested version
+#define __trie_children_count__ 16
+    constexpr const std::size_t children_count = __trie_children_count__;
+
     struct key {
         std::vector<uint8_t> _key;
         std::size_t _size = 0;
@@ -27,6 +30,7 @@ namespace trie {
         key()
         {
             this->_key.clear();
+            this->_size = 0;
         }
         key(void* data, std::size_t len)
         {
@@ -47,13 +51,35 @@ namespace trie {
             }
 
         }
-#if 1
+        std::string to_string() const
+        {
+            std::string result;
+            for (std::size_t i = 0; i < _key.size(); i++)
+            {
+                result.push_back(_key.at(i));
+            }
+            return result;
+        }
+        std::string to_hex_string() const
+        {
+            static constexpr const char* __4b_int_to_hex_char = "0123456789ABCDEF";
+            std::string result("0x");
+            for(std::size_t i=0; i< this->size(); i++)
+            {
+                result.push_back(__4b_int_to_hex_char[this->get_element(i) & 0xF]);
+            }
+            return result;
+        }
+#if __trie_children_count__ == 256
+// code using a 256-trie
         uint8_t get_element(std::size_t index) const { return _key.at(index); } // get a specific byte of the key
         std::size_t size() const { return this->_key.size(); }
         void push_back(uint8_t data) { this->_key.push_back(data); }
         void pop_back() { this->_key.pop_back(); }
         void clear() { this->_key.clear(); }
-#else
+#elif __trie_children_count__ == 16
+// code using a 16-trie
+        friend std::ostream& operator<<(std::ostream& o, const ::trie::key& key);
         uint8_t get_element(std::size_t index) const
         {
             // get raw binary data from key bytes
@@ -68,7 +94,7 @@ namespace trie {
                 // odd, use higher bits
                 data = (data & 0xF0) >> 4;
             }
-            return data;
+            return data; // the value can only hold values in the range 0x0 to 0xF because of the code above
         }
         std::size_t size() const { return this->_size; }
         void push_back(uint8_t data)
@@ -82,20 +108,21 @@ namespace trie {
             else
             {
                 // odd, data needs to be stffed into the last byte
-                this->_key.at(this->_key.size()-1) |= (data & 0xF << 4);
+                this->_key.at(this->_key.size()-1) |= ((data << 4) & 0xF0);
                 this->_size++;
             }
         }
         void pop_back()
         {
-            if (this->_size == 0)
+            if (this->_size % 2 == 0)
             {
-                // even, removal does not remove a byte
+                // even, removal does not remove a byte, but the last 4 bits are cleared
+                this->_key.at(this->_key.size() - 1) &= 0xF;
                 this->_size--;
             }
             else
             {
-                // odd, removal wioll remove the last byte
+                // odd, removal will remove the last byte, clearing is not required since the byte is discarded
                 this->_key.pop_back();
                 this->_size--;
             }
@@ -105,14 +132,14 @@ namespace trie {
             this->_key.clear();
             this->_size = 0;
         }
+#else
+# error Unsupported children count, the supported values are 16 and 256
 #endif
     }; // struct key
 
-    std::ostream& operator<<(std::ostream& o, const ::trie::key& _key)
+    [[deprecated("convert the key to a string brefore printing")]] std::ostream& operator<<(std::ostream& o, const ::trie::key& _key)
     {
-        for (std::size_t i = 0; i < _key.size(); i++)
-            o << _key.get_element(i);
-        return o;
+        return o << _key.to_hex_string();
     }
 
     template<typename T>

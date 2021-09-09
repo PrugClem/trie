@@ -40,5 +40,5 @@ CMakeSettings.json
 .vscode
 build
 
-# test input files
-#test_data.txt
+# test input files, taken from a localisation not  made by me, so that file is not included
+test_data.txt
