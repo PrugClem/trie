@@ -40,5 +40,9 @@ CMakeSettings.json
 .vscode
 build
 
+# deprecated files
+old
+
 # test input files, taken from a localisation not  made by me, so that file is not included
 test_data.txt
+test_small.txt
