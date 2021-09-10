@@ -22,6 +22,7 @@
 #include "impl/16/key_impl.hpp"
 #include "impl/basic_trie_impl.hpp"
 #include "impl/basic_node_iterator_impl.hpp"
+#include "impl/basic_value_iterator_impl.hpp"
 
 namespace trie
 {

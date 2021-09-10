@@ -1,6 +1,6 @@
 /**
 * @file     trie.cpp
-* @brief    main source file for esting purposes
+* @brief    main source file for testing purposes
 * @author   Clemens Pruggmayer
 * (c) 2021 by Clemens Pruggmayer
 *
@@ -14,18 +14,8 @@
 
 #include "trie.hpp"
 
-#if 0
-int main()
-{
-    trie::trie16_t<std::string> test;
-
-    test.insert(trie::key16_t("ABC"), std::make_shared<std::string>("ABC"));
-}
-#else
-
-template<typename value_t> using trie_t = trie::trie16_t<value_t>;
-
-void read_test_file(std::istream& input, trie_t<std::string>& output)
+template<typename key_t>
+void read_test_file(std::istream& input, trie::basic_trie<key_t, std::string>& output)
 {
     std::string stringbuffer, key, value;
     std::size_t index, length, line_number = 0, pair_count = 0;
@@ -73,29 +63,72 @@ void read_test_file(std::istream& input, trie_t<std::string>& output)
 std::string limit_string(std::string input, std::size_t limit)
 {
     return input.substr(0, std::min(input.length() - 1, limit));
+    //return input;
+}
+
+template<typename key_t>
+void test_trie(trie::basic_trie<key_t, std::string>& data, std::ostream& output_log)
+{
+    std::size_t pairs = 0, nodes = 0;
+    std::ifstream ifile("../../../test_data.txt");
+
+    if (!ifile)
+    {
+        throw std::runtime_error("Error opening file");
+    }
+
+    read_test_file(ifile, data);
+    output_log << std::endl;
+
+    for(auto iter = data.node_begin(); iter != data.node_end(); iter++)
+    {
+        if (iter) nodes++;
+        if (iter && iter.get_data()) pairs++;
+        output_log << "counted " << nodes << " nodes containing " << pairs << " pairs at key " << limit_string(iter.get_key().to_hex_string(), 20) << "             \r";
+    }
+    output_log << std::endl << "[forward node iterator] " << pairs << " key-value pairs stored into " << nodes << " trie nodes found in file" << std::endl;
+
+    pairs = nodes = 0;
+    for (auto iter = data.node_rbegin(); iter != data.node_rend(); iter++)
+    {
+        if (iter) nodes++;
+        if (iter && iter.get_data()) pairs++;
+        output_log << "counted " << nodes << " nodes containing " << pairs << " pairs at key " << limit_string(iter.get_key().to_hex_string(), 20) << "             \r";
+    }
+    output_log << std::endl << "[reverse node iterator] " << pairs << " key-value pairs stored into " << nodes << " trie nodes found in file" << std::endl;
+
+    pairs = 0;
+    for (auto iter = data.begin(); iter != data.end(); iter++)
+    {
+        if (iter.is_null()) throw std::runtime_error("ERROR: ITERATOR IS NULL");
+        if (iter.get_data() == nullptr) throw std::runtime_error("ERROR: NO DATA IN ITERATOR");
+        output_log << "counted " << ++pairs << " pairs at key " << limit_string(iter.get_key().to_hex_string(), 20) << "             \r";
+    }
+    output_log << std::endl << "[forward value iterator] " << pairs << " key-value pairs found in file" << std::endl;
+
+    pairs = 0;
+    for(auto iter = data.rbegin(); iter != data.rend(); iter++)
+    {
+        if (iter.is_null()) throw std::runtime_error("ERROR: ITERATOR IS NULL");
+        if (iter.get_data() == nullptr) throw std::runtime_error("ERROR: NO DATA IN ITERATOR");
+        output_log << "counted " << ++pairs << " pairs at key " << limit_string(iter.get_key().to_hex_string(), 20) << "             \r";
+    }
+    output_log << std::endl << "[reverse value iterator] " << pairs << " key-value pairs found in file" << std::endl;
 }
 
 int main()
 {
-    std::ifstream ifile("test_data.txt");
-    if (!ifile)
-    {
-        std::cerr << "unable to open data file!" << std::endl;
-        return 1;
-    }
+    std::ofstream logfile("latest.log", std::ios::binary);
+    if (!logfile) throw std::runtime_error("Error opening logfile");
+    trie::trie256_t<std::string> trie256;
+    trie::trie16_t<std::string> trie16;
 
-    std::size_t pairs = 0, nodes = 0;
-    trie_t<std::string> file_content;
-    read_test_file(ifile, file_content);
-    std::cout << std::endl;
-    for (auto iter = file_content.node_begin(); iter != file_content.node_end(); iter++)
-    {
-        if (iter) nodes++;
-        if (iter && iter.get_data()) pairs++;
-        std::cout << "counted " << nodes << " nodes containing " << pairs << " pairs at key " << limit_string(iter.get_key().to_hex_string(), 20) << "             \r";
-    }
-    std::cout << std::endl << pairs << " key-value pairs stored into " << nodes << " trie nodes found in file" << std::endl;
-    //std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::cout << std::endl << "Testing 256-children trie" << std::endl
+        << "================================" << std::endl;
+    test_trie(trie256, std::cout);
+    std::cout << std::endl << "Testing 16-children trie" << std::endl
+        << "================================" << std::endl;
+    test_trie(trie16, std::cout);
+
     return 0;
 }
-#endif

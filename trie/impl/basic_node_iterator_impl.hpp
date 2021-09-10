@@ -59,7 +59,7 @@ void trie::basic_trie<key_t, value_t>::basic_node_iterator::next_node() const
             child_element = 0;
             return;
         }
-        child_element = (std::size_t)cur_key.get_element(cur_key.size() - 1) + 1;
+        child_element = (std::ptrdiff_t)cur_key.get_element(cur_key.size() - 1) + 1;
         cur_key.pop_back();
         cur_node = trie::basic_trie<key_t, value_t>(root_node).get_node(cur_key);
     }
@@ -72,32 +72,32 @@ void trie::basic_trie<key_t, value_t>::basic_node_iterator::prev_node() const
     {
         cur_node = root_node;
         cur_key.clear();
-        child_key = children_count - 1;
+        child_element = key_t::children_count - 1;
     }
     else if (cur_node == root_node)
     {
         cur_node = nullptr;
         cur_key.clear();
-        child_key = 0;
+        child_element = 0;
         return;
     }
     else
     {
-        child_key = (std::size_t)cur_key.get_element(cur_key.size() - 1) - 1;
+        child_element = (std::ptrdiff_t)cur_key.get_element(cur_key.size() - 1) - 1;
         cur_key.pop_back();
-        cur_node = ::trie::trie<T>(root_node).get_node(cur_key);
+        cur_node = trie::basic_trie<key_t, value_t>(root_node).get_node(cur_key);
     }
 
     while (true)
     {
-        for (std::ptrdiff_t i = child_key; i >= 0; i--)
+        for (std::ptrdiff_t i = child_element; i >= 0; i--)
         {
             if (cur_node->get_child((uint8_t)i) != nullptr)
             {
                 cur_node = cur_node->get_child((uint8_t)i);
                 cur_key.push_back((uint8_t)i);
-                child_key = children_count - 1;
-                i = child_key;
+                child_element = key_t::children_count - 1;
+                i = child_element + 1;
             }
         }
         return;
