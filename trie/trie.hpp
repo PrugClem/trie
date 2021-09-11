@@ -11,24 +11,19 @@
 
 #pragma once
 
-// include definition headers
-#include "basic_key.hpp"
-#include "256/key.hpp"
-#include "16/key.hpp"
+// definitions include files
+#include "key.hpp"
 #include "basic_trie.hpp"
 
-// include implementation headers
-#include "impl/256/key_impl.hpp"
-#include "impl/16/key_impl.hpp"
+// implementation include files
+#include "impl/key256_impl.hpp"
+#include "impl/key16_impl.hpp"
 #include "impl/basic_trie_impl.hpp"
 #include "impl/basic_node_iterator_impl.hpp"
 #include "impl/basic_value_iterator_impl.hpp"
 
 namespace trie
 {
-    using key256_t = trie::trie256::key;
-    using key16_t = trie::trie16::key;
-
-    template<typename value_t> using trie256_t = basic_trie<trie::key256_t, value_t>;
-    template<typename value_t> using trie16_t = basic_trie<trie::key16_t, value_t>;
-} // namespace trie
+    template<typename value_t> using trie256 = trie::basic_trie<256, value_t>;
+    template<typename value_t> using trie16 = trie::basic_trie<16, value_t>;
+}

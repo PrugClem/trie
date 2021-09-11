@@ -13,8 +13,8 @@
 
 #include "../basic_trie.hpp"
 
-template<typename key_t, typename value_t>
-void trie::basic_trie<key_t, value_t>::basic_value_iterator::next_value() const
+template<std::size_t children_count, typename value_t>
+void trie::basic_trie<children_count, value_t>::basic_value_iterator::next_value() const
 {
     do
     {
@@ -28,8 +28,8 @@ void trie::basic_trie<key_t, value_t>::basic_value_iterator::next_value() const
     while ((!this->is_null()) && (this->get_data() == nullptr));
 }
 
-template<typename key_t, typename value_t>
-void trie::basic_trie<key_t, value_t>::basic_value_iterator::prev_value() const
+template<std::size_t children_count, typename value_t>
+void trie::basic_trie<children_count, value_t>::basic_value_iterator::prev_value() const
 {
     do
     {

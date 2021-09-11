@@ -13,21 +13,17 @@
 
 #include "../basic_trie.hpp"
 
-template<typename key_t, typename value_t>
-bool trie::basic_trie<key_t, value_t>::basic_node_iterator::operator==(const trie::basic_trie<key_t, value_t>::basic_node_iterator& other) const
+template<std::size_t children_count, typename value_t>
+bool
+trie::basic_trie<children_count, value_t>::basic_node_iterator::operator==(const trie::basic_trie<children_count, value_t>::basic_node_iterator& other) const
 {
     if (this->root_node != other.root_node) throw std::out_of_range("Iterators are not obtained from the same trie!");
     return this->cur_node == other.cur_node;
 }
 
-template<typename key_t, typename value_t>
-bool trie::basic_trie<key_t, value_t>::basic_node_iterator::operator!=(const trie::basic_trie<key_t, value_t>::basic_node_iterator& other) const
-{
-    return !(*this == other);
-}
-
-template<typename key_t, typename value_t>
-void trie::basic_trie<key_t, value_t>::basic_node_iterator::next_node() const
+template<std::size_t children_count, typename value_t>
+void
+trie::basic_trie<children_count, value_t>::basic_node_iterator::next_node() const
 {
     while (true) // the loop is neccessary for the code to function properly, it will return eventually unless the trie is malformed
     {
@@ -40,13 +36,13 @@ void trie::basic_trie<key_t, value_t>::basic_node_iterator::next_node() const
             return;
         }
         // find the next child
-        for (std::size_t i = child_element; i < key_t::children_count; i++)
+        for (std::size_t i = child_element; i < children_count; i++)
         {
-            if (cur_node->get_child(uint8_t(i)) != nullptr)
+            if (cur_node->get_child(i) != nullptr)
             {
                 // if a child was found, go to child node and stop iterating
-                cur_node = cur_node->get_child(uint8_t(i));
-                cur_key.push_back(uint8_t(i));
+                cur_node = cur_node->get_child(i);
+                cur_key.push_back((uint8_t)i);
                 child_element = 0;
                 return;
             }
@@ -61,18 +57,19 @@ void trie::basic_trie<key_t, value_t>::basic_node_iterator::next_node() const
         }
         child_element = (std::ptrdiff_t)cur_key.get_element(cur_key.size() - 1) + 1;
         cur_key.pop_back();
-        cur_node = trie::basic_trie<key_t, value_t>(root_node).get_node(cur_key);
+        cur_node = trie::basic_trie<children_count, value_t>(root_node).get_node(cur_key);
     }
 }
 
-template<typename key_t, typename value_t>
-void trie::basic_trie<key_t, value_t>::basic_node_iterator::prev_node() const
+template<std::size_t children_count, typename value_t>
+void
+trie::basic_trie<children_count, value_t>::basic_node_iterator::prev_node() const
 {
     if (cur_node == nullptr)
     {
         cur_node = root_node;
         cur_key.clear();
-        child_element = key_t::children_count - 1;
+        child_element = children_count - 1;
     }
     else if (cur_node == root_node)
     {
@@ -85,18 +82,18 @@ void trie::basic_trie<key_t, value_t>::basic_node_iterator::prev_node() const
     {
         child_element = (std::ptrdiff_t)cur_key.get_element(cur_key.size() - 1) - 1;
         cur_key.pop_back();
-        cur_node = trie::basic_trie<key_t, value_t>(root_node).get_node(cur_key);
+        cur_node = trie::basic_trie<children_count, value_t>(root_node).get_node(cur_key);
     }
 
     while (true)
     {
         for (std::ptrdiff_t i = child_element; i >= 0; i--)
         {
-            if (cur_node->get_child((uint8_t)i) != nullptr)
+            if (cur_node->get_child(i) != nullptr)
             {
-                cur_node = cur_node->get_child((uint8_t)i);
+                cur_node = cur_node->get_child(i);
                 cur_key.push_back((uint8_t)i);
-                child_element = key_t::children_count - 1;
+                child_element = children_count - 1;
                 i = child_element + 1;
             }
         }

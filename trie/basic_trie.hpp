@@ -1,6 +1,6 @@
 /**
 * @file     trie/basic_trie.hpp
-* @brief    include file for the definitions for the main trie class
+* @brief    main include file for the trie data structure class
 * @author   Clemens Pruggmayer
 * (c) 2021 by Clemens Pruggmayer
 *
@@ -11,21 +11,22 @@
 
 #pragma once
 
-#include "basic_key.hpp"
+#include "key.hpp"
 
 namespace trie
 {
-    template<typename key_t, typename value_t>
+    template<std::size_t children_count, typename value_t>
     class basic_trie
     {
-        static_assert(std::is_base_of<trie::basic_key, key_t>::value, "Invalid key type provided, key type must be inherited from trie::basic_key");
+    public:
+        using key_t = trie::key<children_count>;
     protected:
         struct node
         {
-            std::array<std::shared_ptr<node>, key_t::children_count> children;
+            std::array<std::shared_ptr<node>, children_count> children;
             std::shared_ptr<value_t> data;
 
-            std::shared_ptr<node>& get_child(std::uint8_t key_element);
+            std::shared_ptr<node>& get_child(std::size_t key_element);
         };
 
         std::shared_ptr<node> _root;
@@ -35,6 +36,23 @@ namespace trie
 
         basic_trie(std::shared_ptr<node> root) { this->_root = root; }
 
+    public:
+        basic_trie() { this->_root = std::make_shared<node>(); }
+        ~basic_trie() {}
+
+        basic_trie(basic_trie&& src) noexcept { this->_root = std::move(src._root); } // move constructing
+        basic_trie& operator=(basic_trie&& src) noexcept { this->_root = std::move(src._root); return *this; } // move assignment
+        basic_trie(const basic_trie& src) = delete; // disable copy constructing
+        basic_trie& operator=(const basic_trie& src) = delete; // disable copy assignments
+
+        bool has_node(const key_t& _key);
+        std::shared_ptr<value_t>& at(const key_t& key);
+        std::shared_ptr<value_t>& operator[] (const key_t& key);
+        bool insert(const key_t& key, std::shared_ptr<value_t> value);
+        trie::basic_trie<children_count, value_t> subtrie(const key_t& key);
+        trie::basic_trie<children_count, value_t> clone();
+
+    protected:
         struct basic_node_iterator
         {
         protected:
@@ -49,7 +67,7 @@ namespace trie
             virtual ~basic_node_iterator() {}
 
             inline bool operator==(const basic_node_iterator& other) const;
-            inline bool operator!=(const basic_node_iterator& other) const;
+            inline bool operator!=(const basic_node_iterator& other) const { return !(*this == other); }
 
             inline bool is_null() const { return this->cur_node == nullptr; }
             inline operator bool() const { return !this->is_null(); }
@@ -120,27 +138,12 @@ namespace trie
             reverse_value_iterator(std::shared_ptr<node> root_node) : basic_value_iterator(root_node) {}
             ~reverse_value_iterator() {}
 
-            const reverse_value_iterator & operator++() const { this->prev_value(); return *this; }
+            const reverse_value_iterator& operator++() const { this->prev_value(); return *this; }
             const reverse_value_iterator operator++(int) const { reverse_value_iterator copy = *this; this->prev_value(); return copy; }
-            const reverse_value_iterator & operator--() const { this->next_value(); return*this; }
+            const reverse_value_iterator& operator--() const { this->next_value(); return*this; }
             const reverse_value_iterator operator--(int) const { reverse_value_iterator copy = *this; this->next_value(); return copy; }
         }; // class reverse_value_iterator
     public:
-        basic_trie() { this->_root = std::make_shared<node>(); }
-        ~basic_trie() {}
-
-        basic_trie(basic_trie&& src) noexcept { this->_root = std::move(src._root); } // move constructing
-        basic_trie& operator=(basic_trie&& src) noexcept { this->_root = std::move(src._root); return *this; } // move assignment
-        basic_trie(const basic_trie& src) = delete; // disable copy constructing
-        basic_trie& operator=(const basic_trie& src) = delete; // disable copy assignments
-
-        bool has_node(const key_t& _key);
-        std::shared_ptr<value_t>& at(const key_t& key);
-        std::shared_ptr<value_t>& operator[] (const key_t& key);
-        bool insert(const key_t& key, std::shared_ptr<value_t> value);
-        trie::basic_trie<key_t, value_t> subtrie(const key_t& key);
-        trie::basic_trie<key_t, value_t> clone();
-
         node_iterator node_begin() { return ++node_iterator(_root); }
         const node_iterator node_begin() const { return ++node_iterator(_root); }
         node_iterator node_end() { return node_iterator(_root); }
@@ -160,6 +163,5 @@ namespace trie
         const reverse_value_iterator rbegin() const { return ++reverse_value_iterator(_root); }
         reverse_value_iterator rend() { return reverse_value_iterator(_root); }
         const reverse_value_iterator rend() const { return reverse_value_iterator(_root); }
-
-    }; // class basic_trie    
+    }; // class basic_trie
 } // namespace trie

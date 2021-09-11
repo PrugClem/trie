@@ -14,8 +14,8 @@
 
 #include "trie.hpp"
 
-template<typename key_t>
-void read_test_file(std::istream& input, trie::basic_trie<key_t, std::string>& output)
+template<std::size_t children_count>
+void read_test_file(std::istream& input, trie::basic_trie<children_count, std::string>& output)
 {
     std::string stringbuffer, key, value;
     std::size_t index, length, line_number = 0, pair_count = 0;
@@ -66,8 +66,8 @@ std::string limit_string(std::string input, std::size_t limit)
     //return input;
 }
 
-template<typename key_t>
-void test_trie(trie::basic_trie<key_t, std::string>& data, std::ostream& output_log)
+template<std::size_t children_count>
+void test_trie(trie::basic_trie<children_count, std::string>& data, std::ostream& output_log)
 {
     std::size_t pairs = 0, nodes = 0;
     std::ifstream ifile("../../../test_data.txt");
@@ -84,7 +84,7 @@ void test_trie(trie::basic_trie<key_t, std::string>& data, std::ostream& output_
     {
         if (iter) nodes++;
         if (iter && iter.get_data()) pairs++;
-        output_log << "counted " << nodes << " nodes containing " << pairs << " pairs at key " << limit_string(iter.get_key().to_hex_string(), 20) << "             \r";
+        output_log << "counted " << nodes << " nodes containing " << pairs << " pairs at key [" << limit_string(iter.get_key().to_hex_string(), 20) << "]             \r";
     }
     output_log << std::endl << "[forward node iterator] " << pairs << " key-value pairs stored into " << nodes << " trie nodes found in file" << std::endl;
 
@@ -93,7 +93,7 @@ void test_trie(trie::basic_trie<key_t, std::string>& data, std::ostream& output_
     {
         if (iter) nodes++;
         if (iter && iter.get_data()) pairs++;
-        output_log << "counted " << nodes << " nodes containing " << pairs << " pairs at key " << limit_string(iter.get_key().to_hex_string(), 20) << "             \r";
+        output_log << "counted " << nodes << " nodes containing " << pairs << " pairs at key [" << limit_string(iter.get_key().to_hex_string(), 20) << "]             \r";
     }
     output_log << std::endl << "[reverse node iterator] " << pairs << " key-value pairs stored into " << nodes << " trie nodes found in file" << std::endl;
 
@@ -102,7 +102,7 @@ void test_trie(trie::basic_trie<key_t, std::string>& data, std::ostream& output_
     {
         if (iter.is_null()) throw std::runtime_error("ERROR: ITERATOR IS NULL");
         if (iter.get_data() == nullptr) throw std::runtime_error("ERROR: NO DATA IN ITERATOR");
-        output_log << "counted " << ++pairs << " pairs at key " << limit_string(iter.get_key().to_hex_string(), 20) << "             \r";
+        output_log << "counted " << ++pairs << " pairs at key [" << limit_string(iter.get_key().to_hex_string(), 20) << "]             \r";
     }
     output_log << std::endl << "[forward value iterator] " << pairs << " key-value pairs found in file" << std::endl;
 
@@ -111,24 +111,25 @@ void test_trie(trie::basic_trie<key_t, std::string>& data, std::ostream& output_
     {
         if (iter.is_null()) throw std::runtime_error("ERROR: ITERATOR IS NULL");
         if (iter.get_data() == nullptr) throw std::runtime_error("ERROR: NO DATA IN ITERATOR");
-        output_log << "counted " << ++pairs << " pairs at key " << limit_string(iter.get_key().to_hex_string(), 20) << "             \r";
+        output_log << "counted " << ++pairs << " pairs at key [" << limit_string(iter.get_key().to_hex_string(), 20) << "]             \r";
     }
     output_log << std::endl << "[reverse value iterator] " << pairs << " key-value pairs found in file" << std::endl;
 }
 
 int main()
 {
-    std::ofstream logfile("latest.log", std::ios::binary);
-    if (!logfile) throw std::runtime_error("Error opening logfile");
-    trie::trie256_t<std::string> trie256;
-    trie::trie16_t<std::string> trie16;
+    //std::ofstream logfile("latest.log", std::ios::binary);
+    //if (!logfile) throw std::runtime_error("Error opening logfile");
+    trie::trie256<std::string> trie256;
+    trie::trie16<std::string> trie16;
 
+    std::ostream& output = std::cout;
     std::cout << std::endl << "Testing 256-children trie" << std::endl
         << "================================" << std::endl;
-    test_trie(trie256, std::cout);
+    test_trie(trie256, output);
     std::cout << std::endl << "Testing 16-children trie" << std::endl
         << "================================" << std::endl;
-    test_trie(trie16, std::cout);
+    test_trie(trie16, output);
 
     return 0;
 }
