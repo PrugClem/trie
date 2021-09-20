@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include "../key.hpp"
+#include "../basic_key.hpp"
 
-template<> void trie::key<256>::init(const void* data, std::size_t len)
+template<> void trie::basic_key<256>::init(const void* data, std::size_t len)
 {
     _key.resize(len);
     this->_size = len;
@@ -23,7 +23,7 @@ template<> void trie::key<256>::init(const void* data, std::size_t len)
     }
 }
 
-template<> void trie::key<256>::init(const std::string& string_key)
+template<> void trie::basic_key<256>::init(const std::string& string_key)
 {
     _key.resize(string_key.length());
     this->_size = string_key.length();
@@ -33,7 +33,7 @@ template<> void trie::key<256>::init(const std::string& string_key)
     }
 }
 
-template<> std::string trie::key<256>::to_string() const
+template<> std::string trie::basic_key<256>::to_string() const
 {
     std::string result;
     for (std::size_t i = 0; i < _key.size(); i++)
@@ -43,51 +43,51 @@ template<> std::string trie::key<256>::to_string() const
     return result;
 }
 
-template<> std::string trie::key<256>::to_hex_string() const
+template<> std::string trie::basic_key<256>::to_hex_string() const
 {
     std::string result("0x");
-    for (std::size_t i = 0; i < this->size(); i++)
+    for (std::size_t i = 0; i < this->_key.size(); i++)
     {
-        result.push_back(__4b_int_to_hex_char[this->get_element(i) & 0xF]);
-        result.push_back(__4b_int_to_hex_char[this->get_element(i) >> 4 & 0xF]);
+        result.push_back(__4b_int_to_hex_char[this->_key.at(i) & 0xF]);
+        result.push_back(__4b_int_to_hex_char[this->_key.at(i) >> 4 & 0xF]);
     }
     return result;
 }
 
-template<> uint8_t trie::key<256>::get_element(std::size_t index) const
+template<> uint8_t trie::basic_key<256>::get_element(std::size_t index) const
 {
     return this->_key.at(index);
 }
 
-template<> std::size_t trie::key<256>::size() const
+template<> std::size_t trie::basic_key<256>::size() const
 {
     return this->_key.size();
 }
 
-template<> void trie::key<256>::push_back(uint8_t data)
+template<> void trie::basic_key<256>::push_back(uint8_t data)
 {
     this->_key.push_back(data);
     this->_size++;
 }
 
-template<> void trie::key<256>::pop_back()
+template<> void trie::basic_key<256>::pop_back()
 {
     this->_key.pop_back();
     this->_size--;
 }
 
-template<> void trie::key<256>::clear()
+template<> void trie::basic_key<256>::clear()
 {
     this->_key.clear();
     this->_size = 0;
 }
 
-/*template<> std::size_t trie::key<256>::export_size() const
+/*template<> std::size_t trie::basic_key<256>::export_size() const
 {
     return this->_key.size();
 }
 
-template<> void trie::key<256>::export_key(void* buffer, std::size_t buflen) const
+template<> void trie::basic_key<256>::export_key(void* buffer, std::size_t buflen) const
 {
     for (std::size_t i = 0; i < std::min(this->export_size(), buflen); i++)
     {

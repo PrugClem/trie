@@ -20,17 +20,17 @@
 namespace trie
 {
     template<std::size_t children_count>
-    class key
+    class basic_key
     {
     protected:
         static constexpr const char* __4b_int_to_hex_char = "0123456789ABCDEF";
         std::vector<uint8_t> _key;
         std::size_t _size;
     public:
-        key() { this->_key.clear(); this->_size = 0; }
-        key(const void* data, std::size_t len) { this->init(data, len); }
-        key(const std::string& string_key) { this->init(string_key); }
-        ~key() {}
+        basic_key() { this->_key.clear(); this->_size = 0; }
+        basic_key(const void* data, std::size_t len) { this->init(data, len); }
+        basic_key(const std::string& string_key) { this->init(string_key); }
+        ~basic_key() {}
 
         void init(const void* data, std::size_t len);
         void init(const std::string& string_key);

@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "key.hpp"
+#include "basic_key.hpp"
 
 namespace trie
 {
@@ -19,7 +19,7 @@ namespace trie
     class basic_trie
     {
     public:
-        using key_t = trie::key<children_count>;
+        using key_t = trie::basic_key<children_count>;
     protected:
         struct node
         {
