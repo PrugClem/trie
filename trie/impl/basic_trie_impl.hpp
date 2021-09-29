@@ -28,7 +28,7 @@ trie::basic_trie<children_count, value_t>::get_node(const key_t& key)
     for (std::size_t i = 0; i < key.size(); i++)
     {
         child = helper->get_child(key.get_element(i)); // get the child item
-        if (child == nullptr) return nullptr;
+        if (child == nullptr) return nullptr; // return a nullptr if the node does not exist
         helper = child; // set the helper pointer to the child and proceed to the next key element
     }
     return helper;
@@ -50,6 +50,20 @@ trie::basic_trie<children_count, value_t>::add_node(const key_t& key)
         helper = child;
     }
     return helper;
+}
+
+template<std::size_t children_count, typename value_t>
+std::shared_ptr< typename trie::basic_trie<children_count, value_t>::node >&&
+trie::basic_trie<children_count, value_t>::extract_node(const key_t& key)
+{
+    std::shared_ptr<node> helper = _root, child;
+    for(std::size_t i = 0; i < key.size()-1; i++) // do not go all the way to the desired node, because this method needs to modify the parent node to extract it
+    {
+        child = helper->get_child(key.get_element(i)); // get the child
+        if (child == nullptr) return nullptr; // return a nullptr if the node does not extist
+        helper = child; // go to the child pointer
+    } // at this point, the helper pointer points to the parent node of the requested node, the only thing left to do is to acutally extract the node
+    return std::move(helper->get_child(key.get_element(key.size() - 1))); // return the pointer to the desired node and remove the reference from the trie itself (handld by std::move(std::shared_ptr) )
 }
 
 template<std::size_t children_count, typename value_t>
@@ -95,6 +109,41 @@ trie::basic_trie<children_count, value_t>::insert(const key_t& key, std::shared_
 }
 
 template<std::size_t children_count, typename value_t>
+bool
+trie::basic_trie<children_count, value_t>::erase(const key_t& key)
+{
+    // extract the node from the trie, when leaving the method scope, the pointer is deconstructed.
+    //  Since the pointer was std::move'd out of the trie, the node is removed from the trie
+    std::shared_ptr<node> helper = this->extract_node(key); 
+    return helper != nullptr; // return true to indicate that the node was removed, return false to indicate that the node did not exist
+}
+
+template<std::size_t children_count, typename value_t>
+void
+trie::basic_trie<children_count, value_t>::merge(trie::basic_trie<children_count, value_t>& source)
+{
+    // This method has to collect all nodes in reverse order from the source trie and then add them in forward order to this trie.
+    std::shared_ptr<node> helper;
+    std::vector<std::pair<key_t, std::shared_ptr<node> > > node_stack;
+    for (auto iter = source.node_rbegin(); iter != source.node_rend(); iter++)
+    {
+        helper = this->get_node(iter.get_key()); // check if this trie has the node
+        if (helper == nullptr) // this trie does not have the node, extract if and push it onto the node stack
+        {
+            node_stack.push_back(std::make_pair(iter.get_key(), source.extract_node(iter.get_key())));
+        }
+    }
+    while (!node_stack.empty())
+    {
+        std::pair<key_t, std::shared_ptr<node> >& ref = node_stack.back(); // get a reference to the stored values
+        helper = this->add_node(ref.first); // add the jnode to this trie
+        helper->children = ref.second->children; // set the children vector
+        helper->data = ref.second->data; // set the data value
+        node_stack.pop_back(); // emove the node from the stack to mark it as done
+    }
+}
+
+template<std::size_t children_count, typename value_t>
 trie::basic_trie<children_count, value_t>
 trie::basic_trie<children_count, value_t>::subtrie(const key_t& key)
 {
@@ -111,4 +160,11 @@ trie::basic_trie<children_count, value_t>::clone()
     for (auto iter = this->node_begin(); iter != this->node_end(); iter++)
         _clone.insert(iter.get_key(), iter.get_data());
     return _clone;
+}
+
+template<std::size_t children_count, typename value_t>
+void
+trie::basic_trie<children_count, value_t>::clear()
+{
+    this->_root = std::make_shared<node>();
 }

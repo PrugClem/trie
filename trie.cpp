@@ -11,8 +11,11 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <thread>
 
 #include "trie.hpp"
+#include "test_trie.hpp"
 
 template<std::size_t children_count>
 void read_test_file(std::istream& input, trie::basic_trie<children_count, std::string>& output)
@@ -60,62 +63,6 @@ void read_test_file(std::istream& input, trie::basic_trie<children_count, std::s
     std::cout << "\nread " << pair_count << " pairs from input file" << std::endl;
 }
 
-std::string limit_string(std::string input, std::size_t limit)
-{
-    return input.substr(0, std::min(input.length() - 1, limit));
-    //return input;
-}
-
-template<std::size_t children_count>
-void test_trie(trie::basic_trie<children_count, std::string>& data, std::ostream& output_log)
-{
-    std::size_t pairs = 0, nodes = 0;
-    std::ifstream ifile("../../../test_data.txt");
-
-    if (!ifile)
-    {
-        throw std::runtime_error("Error opening file");
-    }
-
-    read_test_file(ifile, data);
-    output_log << std::endl;
-
-    for(auto iter = data.node_begin(); iter != data.node_end(); iter++)
-    {
-        if (iter) nodes++;
-        if (iter && iter.get_data()) pairs++;
-        output_log << "counted " << nodes << " nodes containing " << pairs << " pairs at key [" << limit_string(iter.get_key().to_string(), 20) << "]             \r";
-    }
-    output_log << std::endl << "[forward node iterator] " << pairs << " key-value pairs stored into " << nodes << " trie nodes found in file" << std::endl;
-
-    pairs = nodes = 0;
-    for (auto iter = data.node_rbegin(); iter != data.node_rend(); iter++)
-    {
-        if (iter) nodes++;
-        if (iter && iter.get_data()) pairs++;
-        output_log << "counted " << nodes << " nodes containing " << pairs << " pairs at key [" << limit_string(iter.get_key().to_string(), 20) << "]             \r";
-    }
-    output_log << std::endl << "[reverse node iterator] " << pairs << " key-value pairs stored into " << nodes << " trie nodes found in file" << std::endl;
-
-    pairs = 0;
-    for (auto iter = data.begin(); iter != data.end(); iter++)
-    {
-        if (iter.is_null()) throw std::runtime_error("ERROR: ITERATOR IS NULL");
-        if (iter.get_data() == nullptr) throw std::runtime_error("ERROR: NO DATA IN ITERATOR");
-        output_log << "counted " << ++pairs << " pairs at key [" << limit_string(iter.get_key().to_string(), 20) << "]             \r";
-    }
-    output_log << std::endl << "[forward value iterator] " << pairs << " key-value pairs found in file" << std::endl;
-
-    pairs = 0;
-    for(auto iter = data.rbegin(); iter != data.rend(); iter++)
-    {
-        if (iter.is_null()) throw std::runtime_error("ERROR: ITERATOR IS NULL");
-        if (iter.get_data() == nullptr) throw std::runtime_error("ERROR: NO DATA IN ITERATOR");
-        output_log << "counted " << ++pairs << " pairs at key [" << limit_string(iter.get_key().to_string(), 20) << "]             \r";
-    }
-    output_log << std::endl << "[reverse value iterator] " << pairs << " key-value pairs found in file" << std::endl;
-}
-
 int main()
 {
     //std::ofstream logfile("latest.log", std::ios::binary);
@@ -126,7 +73,25 @@ int main()
     trie::trie2<std::string> trie2;
 
     std::ostream& output = std::cout;
-    /*
+    
+    std::cout << std::endl << "Testing 256-children trie (simple test)" << std::endl
+        << "================================" << std::endl;
+    simple_test(trie256, output);
+
+    std::cout << std::endl << "Testing 16-children trie (simple test)" << std::endl
+        << "================================" << std::endl;
+    simple_test(trie16, output);
+
+    std::cout << std::endl << "Testing 4-children trie (simple test)" << std::endl
+        << "================================" << std::endl;
+    simple_test(trie4, output);
+
+    std::cout << std::endl << "Testing 2-children trie (simple test)" << std::endl
+        << "================================" << std::endl;
+    simple_test(trie2, output);
+
+
+
     std::cout << std::endl << "Testing 256-children trie" << std::endl
         << "================================" << std::endl;
     test_trie(trie256, output);
@@ -137,7 +102,7 @@ int main()
 
     std::cout << std::endl << "Testing 4-children trie" << std::endl
         << "================================" << std::endl;
-    test_trie(trie4, output);*/
+    test_trie(trie4, output);
 
     std::cout << std::endl << "Testing 2-children trie" << std::endl
         << "================================" << std::endl;

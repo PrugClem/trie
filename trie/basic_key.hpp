@@ -30,13 +30,14 @@ namespace trie
         basic_key() { this->_key.clear(); this->_size = 0; }
         basic_key(const void* data, std::size_t len) { this->init(data, len); }
         basic_key(const std::string& string_key) { this->init(string_key); }
+        basic_key(const basic_key& other) { this->_key = other._key; this->_size = other._size; }
         ~basic_key() {}
 
         void init(const void* data, std::size_t len);
         void init(const std::string& string_key);
 
         std::string to_string() const;
-        std::string to_hex_string() const;
+        [[deprecated("This method appears to have some bugs")]] std::string to_hex_string() const;
         uint8_t get_element(std::size_t index) const;
         std::size_t size() const;
         void push_back(uint8_t data);

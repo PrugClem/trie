@@ -33,11 +33,12 @@ namespace trie
 
         std::shared_ptr<node> get_node(const key_t& _key);
         std::shared_ptr<node> add_node(const key_t& _key);
+        std::shared_ptr<node>&& extract_node(const key_t& _key);
 
         basic_trie(std::shared_ptr<node> root) { this->_root = root; }
 
     public:
-        basic_trie() { this->_root = std::make_shared<node>(); }
+        basic_trie() { this->clear(); }
         ~basic_trie() {}
 
         basic_trie(basic_trie&& src) noexcept { this->_root = std::move(src._root); } // move constructing
@@ -49,8 +50,11 @@ namespace trie
         std::shared_ptr<value_t>& at(const key_t& key);
         std::shared_ptr<value_t>& operator[] (const key_t& key);
         bool insert(const key_t& key, std::shared_ptr<value_t> value);
+        bool erase(const key_t& key);
+        void merge(::trie::basic_trie<children_count, value_t>& source);
         trie::basic_trie<children_count, value_t> subtrie(const key_t& key);
         trie::basic_trie<children_count, value_t> clone();
+        void clear();
 
     protected:
         struct basic_node_iterator
@@ -73,6 +77,7 @@ namespace trie
             inline operator bool() const { return !this->is_null(); }
             inline bool operator!() const { return this->is_null(); }
 
+            inline key_t get_key() { return this->cur_key; }
             inline const key_t get_key() const { return this->cur_key; }
             inline std::shared_ptr<value_t> get_data() { return this->cur_node->data; }
             inline const std::shared_ptr<value_t> get_data() const { return this->cur_node->data; }
