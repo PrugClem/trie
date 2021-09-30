@@ -33,27 +33,6 @@ template<> void trie::basic_key<2>::init(const std::string& string_key)
     }
 }
 
-template<> std::string trie::basic_key<2>::to_string() const
-{
-    std::string result;
-    for (std::size_t i = 0; i < _key.size(); i++)
-    {
-        result.push_back(_key.at(i));
-    }
-    return result;
-}
-
-template<> std::string trie::basic_key<2>::to_hex_string() const
-{
-    std::string result("0x");
-    for (std::size_t i = 0; i < this->_key.size(); i++)
-    {
-        result.push_back(__4b_int_to_hex_char[this->_key.at(i) & 0xF]);
-        result.push_back(__4b_int_to_hex_char[(this->_key.at(i) >> 4) & 0xF]);
-    }
-    return result;
-}
-
 template<>  uint8_t  trie::basic_key<2>::get_element(std::size_t index) const
 {
     uint8_t data = this->_key.at(index >> 3);

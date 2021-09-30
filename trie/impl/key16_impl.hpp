@@ -34,27 +34,6 @@ template<> void trie::basic_key<16>::init(const std::string& string_key)
     }
 }
 
-template<> std::string trie::basic_key<16>::to_string() const
-{
-    std::string result;
-    for (std::size_t i = 0; i < _key.size(); i++)
-    {
-        result.push_back(_key.at(i));
-    }
-    return result;
-}
-
-template<> std::string trie::basic_key<16>::to_hex_string() const
-{
-    std::string result("0x");
-    for (std::size_t i = 0; i < this->_key.size(); i++)
-    {
-        result.push_back(__4b_int_to_hex_char[this->_key.at(i) & 0xF]);
-        result.push_back(__4b_int_to_hex_char[this->_key.at(i) >> 4 & 0xF]);
-    }
-    return result;
-}
-
 template<> uint8_t trie::basic_key<16>::get_element(std::size_t index) const
 {
     // get raw binary data from key bytes
@@ -118,16 +97,3 @@ template<> void trie::basic_key<16>::clear()
     this->_key.clear();
     this->_size = 0;
 }
-
-/*template<> std::size_t trie::basic_key<16>::export_size() const
-{
-    return this->_key.size();
-}
-
-template<> void trie::basic_key<16>::export_key(void* buffer, std::size_t buflen) const
-{
-    for (std::size_t i = 0; i < std::min(this->export_size(), buflen); i++)
-    {
-        ((uint8_t*)buffer)[i] = this->_key.at(i);
-    }
-}*/

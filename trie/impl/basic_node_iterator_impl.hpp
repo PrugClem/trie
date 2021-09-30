@@ -38,10 +38,10 @@ trie::basic_trie<children_count, value_t>::basic_node_iterator::next_node() cons
         // find the next child
         for (std::size_t i = child_element; i < children_count; i++)
         {
-            if (cur_node->get_child(i) != nullptr)
+            if (cur_node->child(i) != nullptr)
             {
                 // if a child was found, go to child node and stop iterating
-                cur_node = cur_node->get_child(i);
+                cur_node = cur_node->child(i);
                 cur_key.push_back((uint8_t)i);
                 child_element = 0;
                 return;
@@ -89,9 +89,9 @@ trie::basic_trie<children_count, value_t>::basic_node_iterator::prev_node() cons
     {
         for (std::ptrdiff_t i = child_element; i >= 0; i--)
         {
-            if (cur_node->get_child(i) != nullptr)
+            if (cur_node->child(i) != nullptr)
             {
-                cur_node = cur_node->get_child(i);
+                cur_node = cur_node->child(i);
                 cur_key.push_back((uint8_t)i);
                 child_element = children_count - 1;
                 i = child_element + 1;

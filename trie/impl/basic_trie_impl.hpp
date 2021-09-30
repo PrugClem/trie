@@ -15,7 +15,7 @@
 
 template<std::size_t children_count, typename value_t>
 std::shared_ptr< typename trie::basic_trie<children_count, value_t>::node >&
-trie::basic_trie<children_count, value_t>::node::get_child(std::size_t key_element)
+trie::basic_trie<children_count, value_t>::node::child(std::size_t key_element)
 {
     return this->children.at(key_element);
 }
@@ -27,7 +27,7 @@ trie::basic_trie<children_count, value_t>::get_node(const key_t& key)
     std::shared_ptr<node> helper = _root, child;
     for (std::size_t i = 0; i < key.size(); i++)
     {
-        child = helper->get_child(key.get_element(i)); // get the child item
+        child = helper->child(key.get_element(i)); // get the child item
         if (child == nullptr) return nullptr; // return a nullptr if the node does not exist
         helper = child; // set the helper pointer to the child and proceed to the next key element
     }
@@ -42,10 +42,10 @@ trie::basic_trie<children_count, value_t>::add_node(const key_t& key)
     // search for the requested child node and create any nodes that are missing
     for (std::size_t i = 0; i < key.size(); i++)
     {
-        child = helper->get_child(key.get_element(i)); // get the child item
+        child = helper->child(key.get_element(i)); // get the child item
         if (child == nullptr)
         {
-            child = helper->get_child(key.get_element(i)) = std::make_shared<node>(); // if the child item is empty, allocate a new one and set the helper pointer to it
+            child = helper->child(key.get_element(i)) = std::make_shared<node>(); // if the child item is empty, allocate a new one and set the helper pointer to it
         }
         helper = child;
     }
@@ -53,17 +53,18 @@ trie::basic_trie<children_count, value_t>::add_node(const key_t& key)
 }
 
 template<std::size_t children_count, typename value_t>
-std::shared_ptr< typename trie::basic_trie<children_count, value_t>::node >&&
-trie::basic_trie<children_count, value_t>::extract_node(const key_t& key)
+bool
+trie::basic_trie<children_count, value_t>::unlink_node(const key_t& key)
 {
     std::shared_ptr<node> helper = _root, child;
-    for(std::size_t i = 0; i < key.size()-1; i++) // do not go all the way to the desired node, because this method needs to modify the parent node to extract it
+    for (std::size_t i = 0; i < key.size()-1; i++) // stop 1 step before arriving at the wanted node
     {
-        child = helper->get_child(key.get_element(i)); // get the child
-        if (child == nullptr) return nullptr; // return a nullptr if the node does not extist
-        helper = child; // go to the child pointer
-    } // at this point, the helper pointer points to the parent node of the requested node, the only thing left to do is to acutally extract the node
-    return std::move(helper->get_child(key.get_element(key.size() - 1))); // return the pointer to the desired node and remove the reference from the trie itself (handld by std::move(std::shared_ptr) )
+        child = helper->child(key.get_element(i)); // get the child item
+        if (child == nullptr) return false; // return false if the node does not exist
+        helper = child; // set the helper pointer to the child and proceed to the next key element
+    }
+    helper->child(key.get_element(key.size() - 1)) = nullptr; // set the child pointer to a nullptr to unlink it from the trie
+    return true;
 }
 
 template<std::size_t children_count, typename value_t>
@@ -112,10 +113,7 @@ template<std::size_t children_count, typename value_t>
 bool
 trie::basic_trie<children_count, value_t>::erase(const key_t& key)
 {
-    // extract the node from the trie, when leaving the method scope, the pointer is deconstructed.
-    //  Since the pointer was std::move'd out of the trie, the node is removed from the trie
-    std::shared_ptr<node> helper = this->extract_node(key); 
-    return helper != nullptr; // return true to indicate that the node was removed, return false to indicate that the node did not exist
+    return this->unlink_node(key); // unlink the node to effectively erase it from the trie
 }
 
 template<std::size_t children_count, typename value_t>
@@ -130,7 +128,8 @@ trie::basic_trie<children_count, value_t>::merge(trie::basic_trie<children_count
         helper = this->get_node(iter.get_key()); // check if this trie has the node
         if (helper == nullptr) // this trie does not have the node, extract if and push it onto the node stack
         {
-            node_stack.push_back(std::make_pair(iter.get_key(), source.extract_node(iter.get_key())));
+            node_stack.push_back(std::make_pair(iter.get_key(), source.get_node(iter.get_key())));
+            source.erase(iter.get_key());
         }
     }
     while (!node_stack.empty())

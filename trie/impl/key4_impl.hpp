@@ -33,29 +33,11 @@ template<> void trie::basic_key<4>::init(const std::string& string_key)
     }
 }
 
-template<> std::string trie::basic_key<4>::to_string() const
-{
-    std::string result;
-    for (std::size_t i = 0; i < _key.size(); i++)
-    {
-        result.push_back(_key.at(i));
-    }
-    return result;
-}
-
-template<> std::string trie::basic_key<4>::to_hex_string() const
-{
-    std::string result("0x");
-    for (std::size_t i = 0; i < this->_key.size(); i++)
-    {
-        result.push_back(__4b_int_to_hex_char[this->_key.at(i) & 0xF]);
-        result.push_back(__4b_int_to_hex_char[(this->_key.at(i) >> 4) & 0xF]);
-    }
-    return result;
-}
-
 template<> uint8_t trie::basic_key<4>::get_element(std::size_t index) const
 {
+    // this inactive preprocessor block is here to help understanding the code below
+    // if you can understand this method, you should be able to understand the method
+    //  for the 2-children key class, since I used the same priciple
 #if 0
     uint8_t data = this->_key.at(index >> 2);
     switch (index % 4)
@@ -75,10 +57,10 @@ template<> uint8_t trie::basic_key<4>::get_element(std::size_t index) const
     }
     return data;
 #else
-    uint8_t data = this->_key.at(index >> 2);
-    std::size_t shift_amount = (3 - (index % 4)) * 2;
-    uint8_t mask = 0b11 << shift_amount;
-    return (data & mask) >> shift_amount;
+    uint8_t data = this->_key.at(index >> 2); // right shift 2 is the same as divide by 4, but faster (some compilers will optimise to the same code anyways)
+    std::size_t shift_amount = (3 - (index % 4)) * 2; // calculate the amount of bits to shift, see the inactive code above to understand this
+    uint8_t mask = 0b11 << shift_amount; // calculate the bit mask to extrct the correct bytes from the extracted byte
+    return (data & mask) >> shift_amount; // extract the bits from the byte (multiple variables are used for code readability)
 #endif
 }
 
@@ -89,6 +71,9 @@ template<> std::size_t trie::basic_key<4>::size() const
 
 template<> void trie::basic_key<4>::push_back(uint8_t data)
 {
+    // this inactive preprocessor block is here to help understanding the code below
+    // if you can understand this method, you should be able to understand the method
+    //  for the 2-children key class, since I used the same priciple
 #if 0
     switch (_size++ % 4)
     {
@@ -106,12 +91,12 @@ template<> void trie::basic_key<4>::push_back(uint8_t data)
         break;
     }
 #else
-    std::size_t shift_amount = (3 - (_size % 4)) * 2;
-    uint8_t mask = 0b11 << shift_amount;
+    std::size_t shift_amount = (3 - (_size % 4)) * 2; // calculate the amount of bits to shift the mask, see the code above to understand this
+    uint8_t mask = 0b11 << shift_amount; // calculate the bit mask to not corrupt the other data in the key
 
-    if((_size % 4) == 0)
+    if((_size % 4) == 0) // when adding a new key element, it is sometimes reqired to add a new byte to the key container
     {
-        this->_key.push_back((data << shift_amount) & mask);
+        this->_key.push_back((data << shift_amount) & mask); // when pushing a new byte, all unused bits are set to zero
     }
     else
     {
@@ -123,6 +108,9 @@ template<> void trie::basic_key<4>::push_back(uint8_t data)
 
 template<> void trie::basic_key<4>::pop_back()
 {
+    // this inactive preprocessor block is here to help understanding the code below
+    // if you can understand this method, you should be able to understand the method
+    //  for the 2-children key class, since I used the same priciple
 #if 0
     switch (--_size % 4)
     {
@@ -140,15 +128,17 @@ template<> void trie::basic_key<4>::pop_back()
         break;
     }
 #else
-    std::size_t shift_amount = (3 - (--_size % 4)) * 2;
-    uint8_t mask = ~(0b11 << shift_amount);
+    std::size_t shift_amount = (3 - (--_size % 4)) * 2; // calculate the amount of bits to shift the mask, see the code above to understand this
+    uint8_t mask = ~(0b11 << shift_amount); // calculate the mask to clear out the unused bits
 
-    if ((_size % 4) == 0)
+    if ((_size % 4) == 0) // if the byte is emptied out, it can be removed from the container
     {
         this->_key.pop_back();
     }
     else
     {
+        // however, if the byte persists in the container, it is required to mask the now unused bytes to 0
+        // new key elements are binary or'd into the key, which will cause problems if the unused bits are not zero'd out
         this->_key.at(this->_key.size() - 1) &= mask;
     }
 #endif
