@@ -30,10 +30,12 @@ void simple_test(trie::basic_trie<children_count, std::string>& data, std::ostre
     {
         output_log << "data.at(\"" << iter.get_key().to_string() << "\"): \"" << *iter.get_data() << "\"" << std::endl;
     }
+    output_log << "data.size(): " << data.size() << std::endl;
     for (auto iter = second.begin(); iter != second.end(); iter++)
     {
         output_log << "second.at(\"" << iter.get_key().to_string() << "\"): \"" << *iter.get_data() << "\"" << std::endl;
     }
+    output_log << "second.size(): " << second.size() << std::endl;
 
     output_log << "Running line: data.merge(second);" << std::endl;
     data.merge(second);
@@ -42,10 +44,12 @@ void simple_test(trie::basic_trie<children_count, std::string>& data, std::ostre
     {
         output_log << "data.at(\"" << iter.get_key().to_string() << "\"): \"" << *iter.get_data() << "\"" << std::endl;
     }
+    output_log << "data.size(): " << data.size() << std::endl;
     for (auto iter = second.begin(); iter != second.end(); iter++)
     {
         output_log << "second.at(\"" << iter.get_key().to_string() << "\"): \"" << *iter.get_data() << "\"" << std::endl;
     }
+    output_log << "second.size(): " << second.size() << std::endl;
 
     output_log << "Running line: data.erase(\"DEF\"):" << std::endl
                << "Running line: data.merge(second);" << std::endl;
@@ -56,11 +60,13 @@ void simple_test(trie::basic_trie<children_count, std::string>& data, std::ostre
     {
         output_log << "data.at(\"" << iter.get_key().to_string() << "\"): \"" << *iter.get_data() << "\"" << std::endl;
     }
+    output_log << "data.size(): " << data.size() << std::endl;
     for (auto iter = second.begin(); iter != second.end(); iter++)
     {
         output_log << "second.at(\"" << iter.get_key().to_string() << "\"): \"" << *iter.get_data() << "\"" << std::endl;
         throw std::runtime_error("The second trie MUST be empty here!");
     }
+    output_log << "second.size(): " << second.size() << std::endl;
 
     data.clear();
 }

@@ -167,3 +167,15 @@ trie::basic_trie<children_count, value_t>::clear()
 {
     this->_root = std::make_shared<node>();
 }
+
+template<std::size_t children_count, typename value_t>
+std::size_t
+trie::basic_trie<children_count, value_t>::size()
+{
+    std::size_t counter = 0;
+    for (auto iter = this->begin(); iter != this->end(); iter++)
+    {
+        ++counter;
+    }
+    return counter;
+}

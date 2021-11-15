@@ -139,9 +139,12 @@ namespace trie
         trie::basic_trie<children_count, value_t> clone();
         /**
          * @brief removes all nodes from the trie and resets it into the valid empty state
-         * 
          */
         void clear();
+        /**
+         * @brief returns the number of elements stored in the trie, INFO: this method currently has a complexity of O(n)
+         */
+        std::size_t size();
 
     protected:
         /**

@@ -151,6 +151,6 @@ namespace trie
     template <std::size_t children_count>
     void basic_key<children_count>::export_key(void *buffer, std::size_t buflen) const
     {
-        memcpy(buffer, this->_key.data(), std::min(buflen, this->_key.size());
+        memcpy(buffer, this->_key.data(), std::min(buflen, this->_key.size()));
     }
 }; // namespace trie
